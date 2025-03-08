@@ -100,6 +100,7 @@ class ClipboardProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+  //
 
   void undoDelete() {
     if (_deletedItem != null) {
