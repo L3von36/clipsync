@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "746294533414",
+    "project_id": "clipsync-c0382",
+    "storage_bucket": "clipsync-c0382.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:746294533414:android:8d0c6dff8bb03234d075e7",
+        "android_client_info": {
+          "package_name": "com.example.clipsync"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZ62l38mfnFFebwOmWycMfLRBeqtDjnzc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
