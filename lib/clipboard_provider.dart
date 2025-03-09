@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ClipboardProvider with ChangeNotifier {
+  final String _apiUrl = 'http://192.168.1.26:8000/api/clipboard/';
   String _clipboardContent = '';
   List<String> _clipboardHistory = [];
   bool _isSyncEnabled = true;
@@ -23,6 +27,28 @@ class ClipboardProvider with ChangeNotifier {
     _loadHistory();
     _loadTheme();
     _loadSync();
+  }
+  Future<void> fetchClipboardHistory() async {
+    final response = await http.get(Uri.parse(_apiUrl));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      _clipboardHistory = data.map((item) => item['content'].toString()).toList();
+      notifyListeners();
+    } else {
+      throw Exception('Failed to fetch clipboard history');
+    }
+  }
+  Future<void> addToHistory(String content) async {
+    final response = await http.post(
+      Uri.parse(_apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'content': content}),
+    );
+    if (response.statusCode == 201) {
+      await fetchClipboardHistory();
+    } else {
+      throw Exception('Failed to add clipboard item');
+    }
   }
 
   // Load history from shared preferences

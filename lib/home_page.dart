@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:clipboard_watcher/clipboard_watcher.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
 import 'clipboard_provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -11,49 +8,75 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with ClipboardListener {
+class _HomePageState extends State<HomePage> {
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    clipboardWatcher.addListener(this);
-    clipboardWatcher.start();
     _loadClipboardContent();
   }
 
-  @override
-  void dispose() {
-    clipboardWatcher.removeListener(this);
-    clipboardWatcher.stop();
-    super.dispose();
-  }
-
-  void _loadClipboardContent() async {
+  Future<void> _loadClipboardContent() async {
     setState(() {
       _isLoading = true;
     });
-    final content = await Clipboard.getData('text/plain');
-    await Future.delayed(Duration(seconds: 1)); // Simulate loading delay
-    if (content != null) {
-      context.read<ClipboardProvider>().updateClipboardContent(content.text!);
+    try {
+      await context.read<ClipboardProvider>().fetchClipboardHistory();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load clipboard content: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
-    setState(() {
-      _isLoading = false;
-    });
   }
 
-  @override
-  void onClipboardChanged() {
-    _loadClipboardContent();
+  Future<void> _addToClipboard(String content) async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      await context.read<ClipboardProvider>().addToHistory(content);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Successfully added to clipboard history!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to add clipboard content: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final clipboardContent = context.watch<ClipboardProvider>().clipboardContent;
+    final clipboardProvider = context.watch<ClipboardProvider>();
+    final clipboardHistory = clipboardProvider.clipboardHistory;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home'),
+        title: Text(
+          'Home',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: Center(
         child: Padding(
@@ -63,7 +86,8 @@ class _HomePageState extends State<HomePage> with ClipboardListener {
             children: [
               Text(
                 'Clipboard Content:',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
+                  fontFamily: 'Poppins',
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -71,18 +95,45 @@ class _HomePageState extends State<HomePage> with ClipboardListener {
               SizedBox(height: 20),
               _isLoading
                   ? CircularProgressIndicator()
-                  : Text(
-                clipboardContent,
-                style: GoogleFonts.poppins(fontSize: 18),
-                textAlign: TextAlign.center,
+                  : Expanded(
+                child: ListView.builder(
+                  itemCount: clipboardHistory.length,
+                  itemBuilder: (context, index) {
+                    final item = clipboardHistory[index];
+                    return ListTile(
+                      title: Text(
+                        item,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 18,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      trailing: IconButton(
+                        icon: Icon(Icons.content_copy),
+                        onPressed: () async {
+                          await Clipboard.setData(ClipboardData(text: item));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Copied to clipboard: $item'),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _loadClipboardContent,
-        child: Icon(Icons.refresh),
+        onPressed: () async {
+          final content = 'New Clipboard Item';
+          await _addToClipboard(content);
+        },
+        child: Icon(Icons.add),
       ),
     );
   }

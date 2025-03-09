@@ -38,8 +38,9 @@ dependencies:
   clipboard_watcher:
   provider:
   shared_preferences:
-  firebase_core:
-  cloud_firestore:
+
+
+  http:
 
 dev_dependencies:
   flutter_test:
